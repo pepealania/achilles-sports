@@ -102,22 +102,26 @@ Market comparisons will account for bookmaker margin where applicable. Simulated
 
 Probability estimates are model outputs, not guarantees of future results or profitability. Forecast quality must be evaluated before any claims about predictive performance are made.
 
-### Microsoft Foundry AI Integration
+## 🚀 Microsoft Foundry AI Integration
 
-Microsoft Foundry powers the AI intelligence layer of Achilles Sports, supporting agent orchestration, tool usage, model inference, and AI evaluation.
+Achilles Sports leverages **Microsoft Foundry** as the core engine to orchestrate, evaluate, and scale our AI intelligence layer. Instead of relying on traditional, fragmented LLM pipelines, Foundry accelerates our development lifecycle and ensures production-grade reliability across our football analytics workflow.
 
-The intended integration includes:
+### 1. Agent Orchestration & Custom Tools (Developer Productivity)
+* **Unified Workspace:** We use Microsoft Foundry to manage our multi-agent framework, bypassing the need for complex, manual prompt-chaining code.
+* **Deterministic Tool Binding:** Foundry seamlessly maps our specialized Python metrics engine (xG models, Match Reality Index) as executable tools for the AI agents, enabling text-based queries to securely trigger deep numerical calculations.
 
-- Orchestrate multi-step football analysis using AI agents and analytical tools.
-- Generate evidence-grounded explanations from deterministic match metrics.
-- Answer questions about team performance, match dynamics, and statistical signals.
-- Generate contextual match summaries and narratives for different audiences.
-- Evaluate AI responses for factual grounding, relevance, and consistency.
-- Monitor agent execution, tool calls, latency, and failures using available observability capabilities.
+### 2. Multi-Modal Event Ingestion & Inference (Scalable AI Experiences)
+* **High-Throughput Processing:** Match event data streams through Foundry's managed inference endpoints, handling synthetic JSONL match structures efficiently.
+* **Extensible Modalities:** Foundry’s underlying platform architecture ensures that as Achilles Sports evolves to support video, audio commentary, and player-tracking data, our infrastructure can scale without a full backend rewrite.
 
-Microsoft Foundry provides managed AI capabilities, while the overall scalability of Achilles Sports depends on the architecture and deployment of its backend, event-processing pipeline, data storage, and frontend.
+### 3. Rigorous AI Evaluation & Grounding (Faster Innovation)
+* **Automated Factual Auditing:** Football narratives can suffer from AI hallucinations. We use Foundry’s evaluation suites to test generated match recaps against the underlying deterministic data.
+* **Metrics-Driven Refinement:** Foundry drastically reduced our prompt engineering cycle, allowing us to benchmark agent responses for accuracy, token latency, and alignment with statistical evidence.
 
-The goal is to demonstrate how Microsoft Foundry accelerates AI development and enables managed, orchestrated AI experiences that can support scalable football intelligence applications.
+### 4. Enterprise Observability & Safety
+* **Granular Traceability:** Every agent decision, tool execution, and LLM call is tracked using Foundry’s native monitoring capabilities, letting us isolate and resolve pipeline bottlenecks instantly.
+* **Responsible Football Intelligence:** Foundry ensures that statistical betting analysis and outcome probabilities are presented safely, accurately communicating uncertainty without generating misleading financial advice.
+
 
 ### 7. Planned User Experience
 
