@@ -104,22 +104,20 @@ Probability estimates are model outputs, not guarantees of future results or pro
 
 ### 6. Microsoft Foundry AI Integration
 
-Microsoft Foundry provides the AI layer that turns calculated football metrics into understandable and useful explanations.
+Microsoft Foundry powers the AI intelligence layer of Achilles Sports, supporting agent orchestration, tool usage, model inference, and AI evaluation.
 
 The intended integration includes:
 
-- Explain statistical patterns using evidence retrieved from match data.
-- Generate contextual match summaries and narratives.
-- Answer questions about team performance and match dynamics.
-- Use analytical tools to retrieve calculated metrics rather than inventing statistics.
-- Orchestrate multi-step analysis when a question requires several calculations or evidence sources.
-- Adapt explanations for different audiences, including fans, analysts, and broadcasters.
-- Evaluate AI responses for factual grounding, relevance, consistency, and usefulness.
-- Inspect agent execution, tool calls, latency, and failures using available observability capabilities.
+- Orchestrate multi-step football analysis using AI agents and analytical tools.
+- Generate evidence-grounded explanations from deterministic match metrics.
+- Answer questions about team performance, match dynamics, and statistical signals.
+- Generate contextual match summaries and narratives for different audiences.
+- Evaluate AI responses for factual grounding, relevance, and consistency.
+- Monitor agent execution, tool calls, latency, and failures using available observability capabilities.
 
-The analytics engine remains responsible for calculating authoritative statistics. The AI layer interprets those results, explains their implications, and communicates uncertainty.
+Microsoft Foundry provides managed AI capabilities, while the overall scalability of Achilles Sports depends on the architecture and deployment of its backend, event-processing pipeline, data storage, and frontend.
 
-The goal is to demonstrate how Microsoft Foundry can accelerate development and orchestrate reliable AI-powered football intelligence, rather than using an LLM solely to generate text.
+The goal is to demonstrate how Microsoft Foundry accelerates AI development and enables managed, orchestrated AI experiences that can support scalable football intelligence applications.
 
 ### 7. Planned User Experience
 
