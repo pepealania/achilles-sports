@@ -1,173 +1,161 @@
-
-import argparse
 import json
 import random
-from pathlib import Path
+import uuid
+from datetime import datetime, timedelta
 
 TEAMS = [
-    "Northbridge FC",
-    "Kingswell United",
-    "Riverside Athletic",
-    "Westhaven Town",
-    "Eastford Rovers",
-    "Redmont City",
+    {"name": "Arsenal", "attack": 85, "defense": 82},
+    {"name": "Aston Villa", "attack": 80, "defense": 78},
+    {"name": "Chelsea", "attack": 82, "defense": 80},
+    {"name": "Liverpool", "attack": 88, "defense": 84},
+    {"name": "Manchester City", "attack": 90, "defense": 86},
+    {"name": "Manchester United", "attack": 81, "defense": 79},
+    {"name": "Newcastle United", "attack": 82, "defense": 78},
+    {"name": "Tottenham Hotspur", "attack": 83, "defense": 77}
 ]
 
-EVENT_TYPES = [
-    "pass",
-    "carry",
-    "tackle",
-    "interception",
-    "shot",
-    "foul",
-    "corner",
-]
+EVENT_TYPES = ["PASS", "SHOT", "FOUL", "CORNER", "CARD", "OFFSIDE", "SUBSTITUTION"]
 
+def calculate_xg(distance, angle, pressure, situation):
+    """Deterministic xG model mimicking optical/event tracking physics."""
+    base_xg = 0.3 if situation == "OPEN_PLAY" else 0.15
+    if situation == "PENALTY": return 0.76
+    if situation == "HEADER": base_xg *= 0.5
+    
+    # Distance penalty (exponential decay)
+    distance_factor = max(0.01, 1.0 - (distance / 40.0))
+    # Angle penalty (worse angles = lower xG)
+    angle_factor = max(0.1, 1.0 - (abs(angle) / 90.0))
+    # Defensive pressure modifier
+    pressure_factor = 0.4 if pressure == "HIGH" else (0.7 if pressure == "MEDIUM" else 1.0)
+    
+    return round(base_xg * distance_factor * angle_factor * pressure_factor, 3)
 
-def generate_match(match_number: int, rng: random.Random) -> tuple[dict, list[dict]]:
-    home, away = rng.sample(TEAMS, 2)
-    match_id = f"SYN_{match_number:05d}"
-
-    teams = [
-        {"team_id": f"{match_id}_HOME", "name": home, "side": "home"},
-        {"team_id": f"{match_id}_AWAY", "name": away, "side": "away"},
-    ]
-
+def generate_synthetic_match(home_team, away_team):
+    match_id = str(uuid.uuid4())[:8]
     events = []
-    score = {"home": 0, "away": 0}
-    possession = 0
-
-    for minute in range(1, 91):
-        team = rng.choice(teams)
-        side = team["side"]
-        possession += 1
-
-        player_number = rng.randint(1, 11)
-        player_id = f"{team['team_id']}_P{player_number:02d}"
-
-        event_type = rng.choices(
-            EVENT_TYPES,
-            weights=[45, 15, 10, 8, 12, 6, 4],
-        )[0]
-
-        x = round(rng.uniform(0, 100), 2)
-        y = round(rng.uniform(0, 100), 2)
-        outcome = "successful"
-        extra = {}
-
-        if event_type == "pass":
-            outcome = (
-                "successful" if rng.random() < 0.84 else "failed"
-            )
-            extra["pass_length"] = round(rng.uniform(3, 40), 2)
-
-        elif event_type == "shot":
-            x = round(rng.uniform(65, 98), 2)
-            xg = round(
-                min(0.85, max(0.01, ((x - 55) / 45) * rng.uniform(0.05, 0.5))),
-                3,
-            )
-            goal = rng.random() < xg * 0.65
-            on_target = goal or rng.random() < 0.35
-
-            if goal:
-                outcome = "goal"
-                score[side] += 1
-            elif on_target:
-                outcome = "saved"
-            else:
-                outcome = "off_target"
-
-            extra.update({
-                "xg": xg,
-                "is_on_target": on_target,
-            })
-
-        elif event_type == "tackle":
-            outcome = (
-                "successful" if rng.random() < 0.65 else "foul_committed"
-            )
-
-        event = {
-            "event_id": f"{match_id}_E{len(events) + 1:06d}",
-            "match_id": match_id,
-            "period": 1 if minute <= 45 else 2,
-            "minute": minute,
-            "second": rng.randint(0, 59),
-            "team_id": team["team_id"],
-            "player_id": player_id,
-            "possession_id": f"{match_id}_POS{possession:05d}",
-            "event_type": event_type,
-            "x": x,
-            "y": y,
-            "outcome": outcome,
-            "score_home": score["home"],
-            "score_away": score["away"],
-            "synthetic": True,
-            **extra,
+    
+    # Meta Initialization Event
+    events.append({
+        "event_id": str(uuid.uuid4()),
+        "match_id": match_id,
+        "timestamp": (datetime.now() - timedelta(days=random.randint(1, 30))).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "minute": 0,
+        "second": 0,
+        "type": "MATCH_START",
+        "team": "SYSTEM",
+        "player": "SYSTEM",
+        "coordinates": {"x": 0.0, "y": 0.0},
+        "details": {
+            "home_team": home_team["name"],
+            "away_team": away_team["name"],
+            "stadium": f"{home_team['name']} Arena",
+            "weather": random.choice(["Dry", "Rain", "Windy", "Overcast"])
         }
+    })
 
+    current_scores = {home_team["name"]: 0, "away_team_score": 0} # Keep running tally internal
+    home_score = 0
+    away_score = 0
+
+    # Simulate 90 continuous structural event iterations
+    for minute in range(1, 91):
+        if random.random() > 0.45:  # ~40-50 major events per match
+            continue
+            
+        # Determine dominant team based on raw stats + minor variance
+        home_weight = home_team["attack"] / (home_team["attack"] + away_team["defense"])
+        acting_team = home_team if random.random() < home_weight else away_team
+        defending_team = away_team if acting_team == home_team else home_team
+        
+        event_type = random.choices(EVENT_TYPES, weights=[60, 18, 12, 5, 2, 2, 1])[0]
+        
+        event = {
+            "event_id": str(uuid.uuid4()),
+            "match_id": match_id,
+            "minute": minute,
+            "second": random.randint(0, 59),
+            "type": event_type,
+            "team": acting_team["name"],
+            "player": f"Player_{acting_team['name'][:3].upper()}_{random.randint(1, 25)}",
+            "coordinates": {
+                "x": round(random.uniform(50.0, 105.0) if random.random() > 0.3 else random.uniform(0.0, 50.0), 1),
+                "y": round(random.uniform(0.0, 68.0), 1)
+            },
+            "details": {}
+        }
+        
+        # Inject contextually dependent analytics payloads
+        if event_type == "PASS":
+            event["details"] = {
+                "outcome": random.choices(["SUCCESSFUL", "INCOMPLETE", "INTERCEPTED"], weights=[75, 15, 10])[0],
+                "length_meters": round(random.uniform(5.0, 45.0), 1),
+                "zone": random.choice(["ATTACKING_THIRD", "MIDDLE_THIRD", "DEFENSIVE_THIRD"])
+            }
+        elif event_type == "SHOT":
+            dist = round(random.uniform(5.5, 30.0), 1)
+            ang = round(random.uniform(-45.0, 45.0), 1)
+            press = random.choice(["HIGH", "MEDIUM", "LOW"])
+            sit = random.choices(["OPEN_PLAY", "HEADER", "CORNER"], weights=[80, 15, 5])[0]
+            xg_val = calculate_xg(dist, ang, press, sit)
+            
+            # Determine outcome structurally guided by the calculated xG
+            outcome = "BLOCKED" if random.random() < 0.3 else ("OFF_TARGET" if random.random() > (xg_val + 0.4) else "SAVED")
+            if random.random() < xg_val:
+                outcome = "GOAL"
+                if acting_team == home_team: home_score += 1
+                else: away_score += 1
+
+            event["details"] = {
+                "expected_goals": xg_val,
+                "distance_meters": dist,
+                "angle_degrees": ang,
+                "situation": sit,
+                "pressure": press,
+                "outcome": outcome
+            }
+        elif event_type == "FOUL":
+            event["details"] = {
+                "severity": random.choices(["MINOR", "TACTICAL", "RECKLESS"], weights=[70, 20, 10])[0],
+                "suffered_by": f"Player_{defending_team['name'][:3].upper()}_{random.randint(1, 25)}"
+            }
+        elif event_type == "CARD":
+            event["details"] = {
+                "card_color": random.choices(["YELLOW", "RED"], weights=[92, 8])[0],
+                "reason": random.choice(["Unsporting Behaviour", "Late Tackle", "Dissent"])
+            }
+            
         events.append(event)
 
-    match = {
+    # Meta Wrap-up Event
+    events.append({
+        "event_id": str(uuid.uuid4()),
         "match_id": match_id,
-        "home_team": home,
-        "away_team": away,
-        "home_score": score["home"],
-        "away_score": score["away"],
-        "duration_minutes": 90,
-        "synthetic": True,
-        "events_count": len(events),
-    }
+        "minute": 90,
+        "second": 0,
+        "type": "MATCH_END",
+        "team": "SYSTEM",
+        "player": "SYSTEM",
+        "coordinates": {"x": 0.0, "y": 0.0},
+        "details": {
+            "final_score": f"{home_score}-{away_score}",
+            "home_goals": home_score,
+            "away_goals": away_score,
+            "total_events": len(events)
+        }
+    })
+    
+    return events
 
-    return match, events
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Achilles Sports synthetic football dataset generator"
-    )
-    parser.add_argument("--matches", type=int, default=100)
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=Path("data/generated"),
-    )
-    args = parser.parse_args()
-
-    if args.matches < 1:
-        parser.error("--matches must be positive")
-
-    rng = random.Random(args.seed)
-    args.output.mkdir(parents=True, exist_ok=True)
-
-    matches = []
-    events_path = args.output / "events.jsonl"
-
-    with events_path.open("w", encoding="utf-8") as file:
-        for number in range(1, args.matches + 1):
-            match, events = generate_match(number, rng)
-            matches.append(match)
-
-            for event in events:
-                file.write(json.dumps(event) + "\n")
-
-    matches_path = args.output / "matches.json"
-    matches_path.write_text(
-        json.dumps({
-            "dataset": "Achilles Sports Synthetic Football",
-            "synthetic": True,
-            "seed": args.seed,
-            "matches": matches,
-        }, indent=2),
-        encoding="utf-8",
-    )
-
-    print(f"Generated {len(matches)} matches")
-    print(f"Events:  {events_path}")
-    print(f"Matches: {matches_path}")
-
+def run_generator(output_filename="synthetic/matches.jsonl", num_matches=5):
+    print(f"Generating {num_matches} high-fidelity matches...")
+    with open(output_filename, "w") as f:
+        for _ in range(num_matches):
+            home, away = random.sample(TEAMS, 2)
+            match_events = generate_synthetic_match(home, away)
+            for event in match_events:
+                f.write(json.dumps(event) + "\n")
+    print(f"Successfully exported data to {output_filename}!")
 
 if __name__ == "__main__":
-    main()
+    run_generator()
