@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "achilles-analytics-engine": {
+      "command": "python",
+      "args": ["-m", "analytics.engine"],
+      "env": {
+        "PYTHONPATH": "."
+      },
+      "tools": [
+        {
+          "name": "get_match_analytics",
+          "description": "Fetches verified statistical indicators, xG, and Collective Tactical Integrity Score for a football match.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "match_id": {
+                "type": "string",
+                "description": "The unique 8-character match reference identifier."
+              }
+            },
+            "required": ["match_id"]
+          }
+        }
+      ]
+    }
+  }
+}
