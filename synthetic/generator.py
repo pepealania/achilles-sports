@@ -35,11 +35,14 @@ def generate_synthetic_match(home_team, away_team):
     match_id = str(uuid.uuid4())[:8]
     events = []
     
+    # Base match time anchor
+    start_time = datetime.utcnow() - timedelta(days=random.randint(1, 30))
+    
     # Meta Initialization Event
     events.append({
         "event_id": str(uuid.uuid4()),
         "match_id": match_id,
-        "timestamp": (datetime.now() - timedelta(days=random.randint(1, 30))).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "timestamp": start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "minute": 0,
         "second": 0,
         "type": "MATCH_START",
@@ -54,7 +57,6 @@ def generate_synthetic_match(home_team, away_team):
         }
     })
 
-    current_scores = {home_team["name"]: 0, "away_team_score": 0} # Keep running tally internal
     home_score = 0
     away_score = 0
 
@@ -69,12 +71,17 @@ def generate_synthetic_match(home_team, away_team):
         defending_team = away_team if acting_team == home_team else home_team
         
         event_type = random.choices(EVENT_TYPES, weights=[60, 18, 12, 5, 2, 2, 1])[0]
+        event_second = random.randint(0, 59)
+        
+        # Calculate precise cascading timestamp for the event line
+        event_time = start_time + timedelta(minutes=minute, seconds=event_second)
         
         event = {
             "event_id": str(uuid.uuid4()),
             "match_id": match_id,
+            "timestamp": event_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "minute": minute,
-            "second": random.randint(0, 59),
+            "second": event_second,
             "type": event_type,
             "team": acting_team["name"],
             "player": f"Player_{acting_team['name'][:3].upper()}_{random.randint(1, 25)}",
@@ -128,9 +135,11 @@ def generate_synthetic_match(home_team, away_team):
         events.append(event)
 
     # Meta Wrap-up Event
+    end_time = start_time + timedelta(minutes=90)
     events.append({
         "event_id": str(uuid.uuid4()),
         "match_id": match_id,
+        "timestamp": end_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "minute": 90,
         "second": 0,
         "type": "MATCH_END",
@@ -147,7 +156,7 @@ def generate_synthetic_match(home_team, away_team):
     
     return events
 
-def run_generator(output_filename="synthetic/matches.jsonl", num_matches=5):
+def run_generator(output_filename="data/synthetic/matches.jsonl", num_matches=5):
     print(f"Generating {num_matches} high-fidelity matches...")
     with open(output_filename, "w") as f:
         for _ in range(num_matches):

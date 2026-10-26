@@ -1,35 +1,41 @@
 # analytics/engine.py
 import json
 import os
+from ingestion.stream_parser import FootballStreamParser
 
 class FootballAnalyticsEngine:
-    def __init__(self, file_path="synthetic/matches.jsonl"):
-        self.file_path = file_path
+    def __init__(self, file_path="data/synthetic/matches.jsonl"):
+        # Connect directly to your ingestion stream layer
+        self.parser = FootballStreamParser(target_filepath=file_path)
 
     def get_match_summary(self, match_id=None):
-        if not os.path.exists(self.file_path):
-            return {"error": f"Dataset file not found at {self.file_path}"}
-
         events = []
-        with open(self.file_path, "r") as f:
-            for line in f:
-                if line.strip():
-                    ev = json.loads(line)
-                    if match_id is None or ev.get("match_id") == match_id:
-                        events.append(ev)
+        
+        # Stream lines directly via your ingestion generator
+        for ev in self.parser.stream_events():
+            if match_id is None or ev.get("match_id") == match_id:
+                events.append(ev)
 
         if not events:
             return {"error": f"No events found for match_id: {match_id}"}
 
-        # FIX: Explicitly extract the first [0] and last [-1] event dictionaries from the list
+        # Explicitly extract the first and last event dictionaries from the list
         start_ev = events[0]
         end_ev = events[-1]
         
+        # Safeguard if running globally without an ID to pull a valid target match block
+        current_match_id = start_ev["match_id"]
+        
+        # Filter down events strictly to this single match context to prevent cross-contamination
+        match_events = [e for e in events if e.get("match_id") == current_match_id]
+        start_ev = match_events[0]
+        end_ev = match_events[-1]
+
         home_team = start_ev["details"]["home_team"]
         away_team = start_ev["details"]["away_team"]
         
         metrics = {
-            "match_id": start_ev["match_id"], # FIX: Pull from dictionary, not list
+            "match_id": current_match_id,
             "home_team": home_team,
             "away_team": away_team,
             "final_score": end_ev["details"].get("final_score", "0-0"),
@@ -40,7 +46,7 @@ class FootballAnalyticsEngine:
             }
         }
 
-        for ev in events:
+        for ev in match_events:
             t = ev.get("team")
             if t not in metrics["stats"]:
                 continue
@@ -78,9 +84,21 @@ class FootballAnalyticsEngine:
         h_ctie = metrics["stats"][home_team]["collective_tactical_integrity_score"]
         a_ctie = metrics["stats"][away_team]["collective_tactical_integrity_score"]
         
-        metrics["tactical_excellence_award_winner"] = home_team if h_ctie > a_ctie else away_team
+        if h_ctie == a_ctie:
+            metrics["tactical_excellence_award_winner"] = "DRAW"
+        else:
+            metrics["tactical_excellence_award_winner"] = home_team if h_ctie > a_ctie else away_team
+            
         return metrics
 
 if __name__ == "__main__":
     engine = FootballAnalyticsEngine()
-    print(json.dumps(engine.get_match_summary(), indent=2))
+    # Discover the first match_id from the stream to run a clean structured summary
+    sample_match_id = None
+    for event in engine.parser.stream_events():
+        if event.get("match_id"):
+            sample_match_id = event["match_id"]
+            break
+            
+    print(f"Analyzing Match ID context: {sample_match_id}...")
+    print(json.dumps(engine.get_match_summary(match_id=sample_match_id), indent=2))
