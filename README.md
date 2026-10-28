@@ -12,6 +12,54 @@ Built for the **Inside the Game: Developer Hackathon**, organized by Microsoft a
 
 > **Data notice:** Achilles Sports uses synthetic, football-realistic data. It does not redistribute real Premier League match data.
 
+## 🚀 Quickstart
+
+### Web dashboard
+
+The dashboard is a frontend demonstration and does not require Azure credentials.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Vite prints the local URL when the development server starts. To create a production build, run `npm run build` from `frontend`.
+
+### Python analytics
+
+From the repository root, run the summary engine against the bundled synthetic event stream:
+
+```bash
+python -m analytics.engine
+```
+
+Run the analytics tests with:
+
+```bash
+python -m unittest discover -s tests
+```
+
+The test suite currently has one known failure: `test_file_existence` expects a `file_path` attribute that `FootballAnalyticsEngine` does not expose.
+
+## 🗂️ Project Layout
+
+- `frontend/` contains the React dashboard and Vite development setup.
+- `analytics/` contains the event-based match summary engine.
+- `ingestion/` parses JSONL match event streams.
+- `data/synthetic/` contains the bundled sample match data used by the analytics engine.
+- `synthetic/` and `packages/simulation/` contain synthetic match and event generation code.
+- `forecasting/` and `intelligence/` hold forecasting and analyst components under development.
+- `integrations/` contains external service integrations; `main.py` is the optional Foundry inference entry point.
+- `tests/` contains the Python analytics tests.
+
+## 📍 Current Implementation
+
+- The React dashboard is a visual demo. Its displayed metrics and status messages are generated in the browser and are not connected to the Python analytics engine, a live match feed, or Microsoft Foundry.
+- The Python event parser reads JSONL match events, and `FootballAnalyticsEngine` computes a match summary, including xG totals, pass accuracy, Match Reality Index, and CTIE scores.
+- `main.py` contains an optional Microsoft Foundry/Azure OpenAI inference path. It requires Azure project configuration and a deployed model; it is separate from the web dashboard.
+- Forecasting, live event updates, market odds, multimodal ingestion, and AI-grounded match analysis described below are planned capabilities unless explicitly identified as implemented.
+
 ## 🎯 Vision
 
 Football matches tell stories that final scores cannot fully explain.

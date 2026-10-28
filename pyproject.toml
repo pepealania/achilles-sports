@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "achilles-sports"
+version = "0.1.0"
+description = "AI-powered football analytics platform built for Microsoft & Premier League Hackathon"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "azure-ai-projects",
+    "azure-identity",
+    "python-dotenv",
+    "pytest"
+]
+
+[tool.setuptools]
+packages = ["analytics", "ingestion", "synthetic", "intelligence", "forecasting", "integrations"]
